@@ -8,6 +8,7 @@ public interface ClientService {
     ClientResponseDTO save(ClientRequestDTO clientDTO);
     List<ClientResponseDTO> findAll();
     ClientResponseDTO findById(Long id);
+    ClientResponseDTO findByCpf(String cpf);
     ClientResponseDTO update(Long id, ClientRequestDTO clientDTO);
     void delete(Long id);
 }

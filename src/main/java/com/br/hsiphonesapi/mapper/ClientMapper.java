@@ -1,6 +1,5 @@
 package com.br.hsiphonesapi.mapper;
 
-import com.br.hsiphonesapi.dto.request.AddressRequestDTO;
 import com.br.hsiphonesapi.dto.request.ClientRequestDTO;
 import com.br.hsiphonesapi.dto.response.AddressResponseDTO;
 import com.br.hsiphonesapi.dto.response.ClientResponseDTO;
@@ -11,50 +10,42 @@ import org.springframework.stereotype.Component;
 @Component
 public class ClientMapper {
 
-    // RequestDTO -> Entity
+    // RequestDTO -> Entity (Usando Builder)
     public Client toEntity(ClientRequestDTO dto) {
-        Client client = new Client();
-        client.setName(dto.getName());
-        client.setCpf(dto.getCpf());
-        client.setEmail(dto.getEmail());
-        client.setPhone(dto.getPhone());
-
-        Address address = new Address();
-        AddressRequestDTO addrDto = dto.getAddress();
-        address.setStreet(addrDto.getStreet());
-        address.setNumber(addrDto.getNumber());
-        address.setComplement(addrDto.getComplement());
-        address.setDistrict(addrDto.getDistrict());
-        address.setCity(addrDto.getCity());
-        address.setState(addrDto.getState());
-        address.setZipCode(addrDto.getZipCode());
-
-        client.setAddress(address);
-        return client;
+        return Client.builder()
+                .name(dto.getName())
+                .cpf(dto.getCpf())
+                .email(dto.getEmail())
+                .phone(dto.getPhone())
+                .address(Address.builder()
+                        .street(dto.getAddress().getStreet())
+                        .number(dto.getAddress().getNumber())
+                        .complement(dto.getAddress().getComplement())
+                        .district(dto.getAddress().getDistrict())
+                        .city(dto.getAddress().getCity())
+                        .state(dto.getAddress().getState())
+                        .zipCode(dto.getAddress().getZipCode())
+                        .build())
+                .build();
     }
 
-    // Entity -> ResponseDTO
+    // Entity -> ResponseDTO (Usando Builder)
     public ClientResponseDTO toResponse(Client entity) {
-        ClientResponseDTO dto = new ClientResponseDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setCpf(entity.getCpf());
-        dto.setEmail(entity.getEmail());
-        dto.setPhone(entity.getPhone());
-
-        if (entity.getAddress() != null) {
-            AddressResponseDTO addrDto = new AddressResponseDTO();
-            Address addr = entity.getAddress();
-            addrDto.setStreet(addr.getStreet());
-            addrDto.setNumber(addr.getNumber());
-            addrDto.setComplement(addr.getComplement());
-            addrDto.setDistrict(addr.getDistrict());
-            addrDto.setCity(addr.getCity());
-            addrDto.setState(addr.getState());
-            addrDto.setZipCode(addr.getZipCode());
-
-            dto.setAddress(addrDto);
-        }
-        return dto;
+        return ClientResponseDTO.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .cpf(entity.getCpf())
+                .email(entity.getEmail())
+                .phone(entity.getPhone())
+                .address(entity.getAddress() != null ? AddressResponseDTO.builder()
+                        .street(entity.getAddress().getStreet())
+                        .number(entity.getAddress().getNumber())
+                        .complement(entity.getAddress().getComplement())
+                        .district(entity.getAddress().getDistrict())
+                        .city(entity.getAddress().getCity())
+                        .state(entity.getAddress().getState())
+                        .zipCode(entity.getAddress().getZipCode())
+                        .build() : null)
+                .build();
     }
 }

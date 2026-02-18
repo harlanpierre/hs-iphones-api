@@ -30,6 +30,9 @@ public class ClientServiceImpl implements ClientService {
         if (repository.existsByCpf(dto.getCpf())) {
             throw new IllegalArgumentException("CPF já cadastrado.");
         }
+        if (repository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Email já cadastrado.");
+        }
         // Converte DTO -> Entity
         Client client = mapper.toEntity(dto);
         // Salva
@@ -50,6 +53,13 @@ public class ClientServiceImpl implements ClientService {
         return repository.findById(id)
                 .map(mapper::toResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
+    }
+
+    @Override
+    public ClientResponseDTO findByCpf(String cpf) {
+        return repository.findByCpf(cpf)
+                .map(mapper::toResponse)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado com o CPF: " + cpf));
     }
 
     @Override
