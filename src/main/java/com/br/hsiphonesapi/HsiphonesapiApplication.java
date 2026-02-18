@@ -1,0 +1,13 @@
+package com.br.hsiphonesapi;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class HsiphonesapiApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(HsiphonesapiApplication.class, args);
+	}
+
+}
