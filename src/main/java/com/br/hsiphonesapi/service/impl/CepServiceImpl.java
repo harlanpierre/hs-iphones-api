@@ -49,7 +49,7 @@ public class CepServiceImpl implements CepService {
             if (result.isDone()) return; // Se alguém já ganhou, nem tenta
             try {
                 var response = viaCepClient.buscarCep(cep);
-                if (response != null && !response.isErro()) {
+                if (response != null && Boolean.FALSE.equals(response.getErro())) {
                     log.info("ViaCEP venceu a corrida");
                     result.complete(AddressResponseDTO.builder()
                             .street(response.getLogradouro())
