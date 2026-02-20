@@ -1,0 +1,7 @@
+CREATE TABLE supplier (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    cpf_cnpj VARCHAR(20),
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
