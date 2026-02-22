@@ -106,6 +106,20 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public List<ProductResponseDTO> findAvailableProducts() {
+        return productRepository.findByStatus(ProductStatus.DISPONIVEL).stream()
+                .map(mapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProductResponseDTO> findByCategoryAndStatus(ProductCategory category, ProductStatus status) {
+        return productRepository.findByCategoryAndStatus(category, status).stream()
+                .map(mapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public ProductResponseDTO findById(Long id) {
         return productRepository.findById(id)
                 .map(mapper::toResponse)

@@ -64,11 +64,18 @@ public class Product {
     @Column(name = "compatible_model")
     private String compatibleModel;
 
+    @Column(name = "warranty_days")
+    private Integer warrantyDays;
+
     @Column(name = "supplier_warranty_start_date")
     private LocalDate supplierWarrantyStartDate;
 
     @Column(name = "supplier_warranty_end_date")
     private LocalDate supplierWarrantyEndDate;
+
+    @Column(name = "repair_cost")
+    @Builder.Default
+    private BigDecimal repairCost = BigDecimal.ZERO;
 
     // Origem: Fornecedor
     @ManyToOne

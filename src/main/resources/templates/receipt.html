@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Termo de Garantia - HS iPhones</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; color: #333;}
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;}
+        .store-info { font-size: 14px; color: #555; margin-top: 5px; line-height: 1.5; }
+        .details { margin-top: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .footer { margin-top: 30px; font-size: 12px; text-align: justify; }
+        .totals { margin-top: 20px; text-align: right; font-size: 16px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>HS iPhones - Vendas e Assistência Especializada</h1>
+    <div class="store-info">
+        <p>CNPJ: 00.000.000/0001-00 | Telefone: (81) 99999-9999</p>
+        <p>Endereço: Av. Principal, 1000 - Centro, Recife/PE</p>
+    </div>
+    <h2>Comprovante de Venda e Termo de Garantia</h2>
+    <p><strong>Pedido Nº:</strong> <span th:text="${sale.id}"></span> | <strong>Data:</strong> <span th:text="${#temporals.format(sale.completedAt, 'dd/MM/yyyy HH:mm')}"></span></p>
+</div>
+
+<div class="details">
+    <h3 style="margin-top: 0;">Dados do Cliente</h3>
+    <p><strong>Nome:</strong> <span th:text="${client.name}"></span></p>
+    <p><strong>CPF:</strong> <span th:text="${client.cpf}"></span></p>
+    <p><strong>Vendedor responsável:</strong> <span th:text="${sale.sellerName}"></span></p>
+</div>
+
+<h3>Aparelhos / Produtos Adquiridos</h3>
+<table>
+    <thead>
+    <tr>
+        <th>SKU</th>
+        <th>Produto</th>
+        <th>IMEI</th>
+        <th>Qtd</th>
+        <th>Valor Unt.</th>
+        <th>Fim da Garantia</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${items}">
+        <td th:text="${item.product.sku}"></td>
+        <td th:text="${item.product.name}"></td>
+        <td th:text="${item.imei != null ? item.imei : 'N/A'}"></td>
+        <td th:text="${item.quantity}"></td>
+        <td th:text="${'R$ ' + item.unitPrice}"></td>
+        <td th:text="${#temporals.format(item.warrantyEndDate, 'dd/MM/yyyy')}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="totals">
+    <p><strong>Total Bruto:</strong> R$ <span th:text="${sale.totalAmount}"></span></p>
+    <p><strong>Desconto:</strong> R$ <span th:text="${sale.discountAmount}"></span></p>
+    <p style="font-size: 18px; font-weight: bold;"><strong>Total Pago:</strong> R$ <span th:text="${sale.netAmount}"></span></p>
+</div>
+
+<div class="footer">
+    <h3>Termos da Garantia</h3>
+    <p>A garantia de aparelhos seminovos cobre apenas defeitos de fabricação de placa ou componentes internos não originados por mau uso. Danos causados por líquidos (água, suor extremo), quedas, trincos na tela ou traseira, ou qualquer tipo de manutenção realizada por terceiros não autorizados pela HS iPhones invalidam esta garantia imediatamente. O IMEI do aparelho é a nossa única forma de validação de procedência e deve bater com o registrado neste documento.</p>
+</div>
+</body>
+</html>

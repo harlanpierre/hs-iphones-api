@@ -6,6 +6,8 @@ import com.br.hsiphonesapi.model.Product;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @RequiredArgsConstructor
 @Component
 public class ProductMapper {
@@ -25,8 +27,10 @@ public class ProductMapper {
                 .minStock(dto.getMinStock())
                 .imeis(dto.getImeis()) // Passa a lista direto
                 .compatibleModel(dto.getCompatibleModel())
+                .warrantyDays(dto.getWarrantyDays() != null ? dto.getWarrantyDays() : 90)
                 .supplierWarrantyStartDate(dto.getSupplierWarrantyStartDate())
                 .supplierWarrantyEndDate(dto.getSupplierWarrantyEndDate())
+                .repairCost(dto.getRepairCost() != null ? dto.getRepairCost() : BigDecimal.ZERO)
                 // Nota: Supplier e Client são setados na Service via ID
                 .build();
     }
@@ -45,8 +49,10 @@ public class ProductMapper {
                 .minStock(entity.getMinStock())
                 .imeis(entity.getImeis())
                 .compatibleModel(entity.getCompatibleModel())
+                .warrantyDays(entity.getWarrantyDays())
                 .supplierWarrantyStartDate(entity.getSupplierWarrantyStartDate())
                 .supplierWarrantyEndDate(entity.getSupplierWarrantyEndDate())
+                .repairCost(entity.getRepairCost())
 
                 // Mapeamento condicional: Se tem fornecedor, mapeia. Se tem cliente, mapeia.
                 .supplier(entity.getSupplier() != null ? supplierMapper.toResponse(entity.getSupplier()) : null)

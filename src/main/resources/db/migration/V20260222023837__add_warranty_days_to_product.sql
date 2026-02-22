@@ -1,0 +1,1 @@
+ALTER TABLE product ADD COLUMN warranty_days INTEGER DEFAULT 90;

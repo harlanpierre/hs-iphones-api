@@ -56,11 +56,17 @@ public class ProductResponseDTO {
     @Schema(description = "Modelo compatível (se aplicável)", example = "iPhone 15")
     private String compatibleModel;
 
+    @Schema(description = "Dias de garantia oferecidos ao cliente final", example = "90")
+    private Integer warrantyDays;
+
     @Schema(example = "2024-01-10")
     private LocalDate supplierWarrantyStartDate;
 
     @Schema(example = "2024-04-10")
     private LocalDate supplierWarrantyEndDate;
+
+    @Schema(description = "Custo total de peças e reparações aplicadas neste aparelho (útil para BuyBack)", example = "250.00")
+    private BigDecimal repairCost;
 
     @Schema(description = "Dados do fornecedor (se a origem for compra)")
     private SupplierResponseDTO supplier;

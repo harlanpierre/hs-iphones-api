@@ -58,11 +58,17 @@ public class ProductRequestDTO {
     @Schema(description = "Modelo compatível (Para Peças/Acessórios)", example = "iPhone 14, iPhone 15")
     private String compatibleModel;
 
+    @Schema(description = "Dias de garantia oferecidos para o cliente final (Padrão: 90 dias seminovo, 365 dias novo)", example = "90")
+    private Integer warrantyDays;
+
     @Schema(description = "Início da garantia do fornecedor", example = "2024-01-10")
     private LocalDate supplierWarrantyStartDate;
 
     @Schema(description = "Fim da garantia do fornecedor", example = "2024-04-10")
     private LocalDate supplierWarrantyEndDate;
+
+    @Schema(description = "Custo inicial de reparações associado ao aparelho (opcional)", example = "0.00")
+    private BigDecimal repairCost;
 
     @Schema(description = "ID do Fornecedor (Opcional se tiver cliente)", example = "1")
     private Long supplierId;
