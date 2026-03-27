@@ -4,6 +4,8 @@ import com.br.hsiphonesapi.dto.request.ProductRequestDTO;
 import com.br.hsiphonesapi.dto.response.ProductResponseDTO;
 import com.br.hsiphonesapi.model.enums.ProductCategory;
 import com.br.hsiphonesapi.model.enums.ProductStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -14,11 +16,11 @@ public interface ProductService {
 
     List<ProductResponseDTO> findHistoryByImei(String imei);
 
-    List<ProductResponseDTO> findAll();
+    Page<ProductResponseDTO> findAll(Pageable pageable);
 
-    List<ProductResponseDTO> findAvailableProducts();
+    Page<ProductResponseDTO> findAvailableProducts(Pageable pageable);
 
-    List<ProductResponseDTO> findByCategoryAndStatus(ProductCategory category, ProductStatus status);
+    Page<ProductResponseDTO> findByCategoryAndStatus(ProductCategory category, ProductStatus status, Pageable pageable);
 
     ProductResponseDTO findById(Long id);
 

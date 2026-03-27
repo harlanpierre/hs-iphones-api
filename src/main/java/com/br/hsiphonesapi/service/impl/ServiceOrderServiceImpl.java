@@ -17,6 +17,8 @@ import com.br.hsiphonesapi.service.ProductStatusHistoryService;
 import com.br.hsiphonesapi.service.ServiceOrderService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,23 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
     private final ServiceOrderRepository osRepository;
     private final ProductRepository productRepository;
     private final ProductStatusHistoryService historyService;
+
+    @Override
+    public Page<ServiceOrderResponseDTO> findAll(Pageable pageable) {
+        return osRepository.findAll(pageable).map(mapper::toResponse);
+    }
+
+    @Override
+    public Page<ServiceOrderResponseDTO> findByFilters(ServiceOrderStatus status, Long clientId, Pageable pageable) {
+        return osRepository.findByFilters(status, clientId, pageable).map(mapper::toResponse);
+    }
+
+    @Override
+    public ServiceOrderResponseDTO findById(Long id) {
+        ServiceOrder os = osRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Ordem de Serviço não encontrada."));
+        return mapper.toResponse(os);
+    }
 
     @Override
     @Transactional

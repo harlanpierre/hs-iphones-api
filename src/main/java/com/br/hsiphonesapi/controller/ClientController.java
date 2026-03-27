@@ -7,11 +7,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,10 +21,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -40,18 +40,19 @@ public class ClientController {
     })
     @PostMapping
     public ResponseEntity<ClientResponseDTO> create(@RequestBody @Valid ClientRequestDTO dto) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(service.save(dto));
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(dto));
     }
 
-    @Operation(summary = "Listar todos os clientes", description = "Retorna uma lista completa de clientes cadastrados.")
+    @Operation(summary = "Listar clientes (paginado)", description = "Retorna uma lista paginada de clientes. Use ?search= para buscar por nome, CPF ou email.")
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @GetMapping
-    public ResponseEntity<List<ClientResponseDTO>> listAll() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<Page<ClientResponseDTO>> listAll(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20) Pageable pageable) {
+        if (search != null && !search.isBlank()) {
+            return ResponseEntity.ok(service.search(search, pageable));
+        }
+        return ResponseEntity.ok(service.findAll(pageable));
     }
 
     @Operation(summary = "Buscar cliente por ID", description = "Retorna os detalhes de um cliente específico.")
@@ -61,11 +62,7 @@ public class ClientController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<ClientResponseDTO> findById(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(service.findById(id));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(service.findById(id));
     }
 
     @Operation(summary = "Buscar cliente por CPF", description = "Retorna os detalhes de um cliente dado seu CPF exato.")
@@ -75,11 +72,7 @@ public class ClientController {
     })
     @GetMapping("/cpf/{cpf}")
     public ResponseEntity<ClientResponseDTO> findByCpf(@PathVariable String cpf) {
-        try {
-            return ResponseEntity.ok(service.findByCpf(cpf));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(service.findByCpf(cpf));
     }
 
     @Operation(summary = "Atualizar cliente", description = "Atualiza os dados cadastrais e de endereço de um cliente existente.")
@@ -89,11 +82,7 @@ public class ClientController {
     })
     @PutMapping("/{id}")
     public ResponseEntity<ClientResponseDTO> update(@PathVariable Long id, @RequestBody @Valid ClientRequestDTO dto) {
-        try {
-            return ResponseEntity.ok(service.update(id, dto));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(service.update(id, dto));
     }
 
     @Operation(summary = "Deletar cliente", description = "Remove um cliente e seu endereço vinculado do banco de dados.")
@@ -103,11 +92,7 @@ public class ClientController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        try {
-            service.delete(id);
-            return ResponseEntity.noContent().build();
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

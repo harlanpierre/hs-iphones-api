@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,25 +41,25 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todos os produtos")
-    public ResponseEntity<List<ProductResponseDTO>> listAll() {
-        return ResponseEntity.ok(service.findAll());
+    @Operation(summary = "Listar todos os produtos (paginado)")
+    public ResponseEntity<Page<ProductResponseDTO>> listAll(@PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(service.findAll(pageable));
     }
 
     @GetMapping("/available")
-    @Operation(summary = "Listar produtos disponíveis para venda")
-    public ResponseEntity<List<ProductResponseDTO>> getAvailableProducts() {
-        return ResponseEntity.ok(service.findAvailableProducts());
+    @Operation(summary = "Listar produtos disponíveis para venda (paginado)")
+    public ResponseEntity<Page<ProductResponseDTO>> getAvailableProducts(@PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(service.findAvailableProducts(pageable));
     }
 
     @GetMapping("/filter")
-    @Operation(summary = "Buscar produtos por Categoria e Status",
-            description = "Retorna uma lista de produtos filtrada pela categoria (ex: CELULAR, PECA) e pelo status atual (ex: DISPONIVEL, IN_REPAIR).")
-    public ResponseEntity<List<ProductResponseDTO>> findByCategoryAndStatus(
+    @Operation(summary = "Buscar produtos por Categoria e Status (paginado)",
+            description = "Retorna uma lista paginada filtrada pela categoria (ex: CELULAR, PECA) e pelo status atual (ex: DISPONIVEL, IN_REPAIR).")
+    public ResponseEntity<Page<ProductResponseDTO>> findByCategoryAndStatus(
             @RequestParam ProductCategory category,
-            @RequestParam ProductStatus status) {
-
-        return ResponseEntity.ok(service.findByCategoryAndStatus(category, status));
+            @RequestParam ProductStatus status,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(service.findByCategoryAndStatus(category, status, pageable));
     }
 
     @GetMapping("/{id}")

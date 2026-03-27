@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +23,24 @@ import org.springframework.web.bind.annotation.*;
 public class ServiceOrderController {
 
     private final ServiceOrderService service;
+
+    @GetMapping
+    @Operation(summary = "Listar Ordens de Serviço (paginado com filtros)", description = "Filtre por status e/ou clientId. Ambos opcionais.")
+    public ResponseEntity<Page<ServiceOrderResponseDTO>> findAll(
+            @RequestParam(required = false) ServiceOrderStatus status,
+            @RequestParam(required = false) Long clientId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        if (status != null || clientId != null) {
+            return ResponseEntity.ok(service.findByFilters(status, clientId, pageable));
+        }
+        return ResponseEntity.ok(service.findAll(pageable));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar Ordem de Serviço por ID")
+    public ResponseEntity<ServiceOrderResponseDTO> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(service.findById(id));
+    }
 
     @PostMapping
     @Operation(summary = "Abrir nova Ordem de Serviço", description = "Cria uma O.S. vinculada a um cliente com o status inicial RECEIVED.")

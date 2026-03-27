@@ -14,6 +14,8 @@ import com.br.hsiphonesapi.repository.SupplierRepository;
 import com.br.hsiphonesapi.service.ProductService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,24 +101,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductResponseDTO> findAll() {
-        return productRepository.findAll().stream()
-                .map(mapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<ProductResponseDTO> findAll(Pageable pageable) {
+        return productRepository.findAll(pageable).map(mapper::toResponse);
     }
 
     @Override
-    public List<ProductResponseDTO> findAvailableProducts() {
-        return productRepository.findByStatus(ProductStatus.DISPONIVEL).stream()
-                .map(mapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<ProductResponseDTO> findAvailableProducts(Pageable pageable) {
+        return productRepository.findByStatus(ProductStatus.DISPONIVEL, pageable).map(mapper::toResponse);
     }
 
     @Override
-    public List<ProductResponseDTO> findByCategoryAndStatus(ProductCategory category, ProductStatus status) {
-        return productRepository.findByCategoryAndStatus(category, status).stream()
-                .map(mapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<ProductResponseDTO> findByCategoryAndStatus(ProductCategory category, ProductStatus status, Pageable pageable) {
+        return productRepository.findByCategoryAndStatus(category, status, pageable).map(mapper::toResponse);
     }
 
     @Override

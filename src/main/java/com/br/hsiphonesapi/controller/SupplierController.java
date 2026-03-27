@@ -7,14 +7,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,11 +31,16 @@ public class SupplierController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.save(dto));
     }
 
-    @Operation(summary = "Listar todos os fornecedores")
+    @Operation(summary = "Listar fornecedores (paginado)", description = "Retorna uma lista paginada. Use ?filter= para buscar por nome, CPF/CNPJ ou telefone.")
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @GetMapping
-    public ResponseEntity<List<SupplierResponseDTO>> listAll() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<Page<SupplierResponseDTO>> listAll(
+            @RequestParam(required = false) String filter,
+            @PageableDefault(size = 20) Pageable pageable) {
+        if (filter != null && !filter.isBlank()) {
+            return ResponseEntity.ok(service.findByFilter(filter, pageable));
+        }
+        return ResponseEntity.ok(service.findAll(pageable));
     }
 
     @Operation(summary = "Buscar fornecedor por ID")
@@ -45,21 +50,7 @@ public class SupplierController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<SupplierResponseDTO> findById(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(service.findById(id));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @Operation(summary = "Buscar fornecedor (Filtro Inteligente)",
-            description = "Busca por coincidência no Nome, CPF/CNPJ ou Telefone.")
-    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso")
-    @GetMapping("/search")
-    public ResponseEntity<List<SupplierResponseDTO>> search(
-            @RequestParam(required = false) String filter) {
-
-        return ResponseEntity.ok(service.findByFilter(filter));
+        return ResponseEntity.ok(service.findById(id));
     }
 
     @Operation(summary = "Atualizar fornecedor")
@@ -69,11 +60,7 @@ public class SupplierController {
     })
     @PutMapping("/{id}")
     public ResponseEntity<SupplierResponseDTO> update(@PathVariable Long id, @RequestBody @Valid SupplierRequestDTO dto) {
-        try {
-            return ResponseEntity.ok(service.update(id, dto));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(service.update(id, dto));
     }
 
     @Operation(summary = "Deletar fornecedor")
@@ -83,11 +70,7 @@ public class SupplierController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        try {
-            service.delete(id);
-            return ResponseEntity.noContent().build();
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

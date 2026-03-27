@@ -15,6 +15,8 @@ import com.br.hsiphonesapi.repository.SaleRepository;
 import com.br.hsiphonesapi.service.SaleService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,23 @@ public class SaleServiceImpl implements SaleService {
     private final ProductRepository productRepository;
     private final ClientRepository clientRepository;
     private final SaleMapper saleMapper;
+
+    @Override
+    public Page<SaleResponseDTO> findAll(Pageable pageable) {
+        return saleRepository.findAll(pageable).map(saleMapper::toResponse);
+    }
+
+    @Override
+    public Page<SaleResponseDTO> findByFilters(SaleStatus status, Long clientId, LocalDateTime dateFrom, LocalDateTime dateTo, Pageable pageable) {
+        return saleRepository.findByFilters(status, clientId, dateFrom, dateTo, pageable).map(saleMapper::toResponse);
+    }
+
+    @Override
+    public SaleResponseDTO findById(Long id) {
+        Sale sale = saleRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada."));
+        return saleMapper.toResponse(sale);
+    }
 
     // FLUXO 1: ORÇAMENTO (Não desconta estoque, não exige pagamento)
     @Override
@@ -94,6 +113,46 @@ public class SaleServiceImpl implements SaleService {
 
         reserveStockForExistingSale(sale);
         sale.setStatus(SaleStatus.RESERVADO);
+        return saleMapper.toResponse(saleRepository.save(sale));
+    }
+
+    // MÁQUINA DE ESTADOS: Cancelar venda (devolve estoque se já foi deduzido)
+    @Override
+    @Transactional
+    public SaleResponseDTO cancelSale(Long saleId) {
+        Sale sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada."));
+
+        if (sale.getStatus() == SaleStatus.CANCELADO) {
+            throw new IllegalArgumentException("Esta venda já está cancelada.");
+        }
+        if (sale.getStatus() == SaleStatus.DEVOLVIDO) {
+            throw new IllegalArgumentException("Não é possível cancelar uma venda já devolvida.");
+        }
+
+        // Devolve estoque se a venda já havia deduzido (RESERVADO ou CONCLUIDO)
+        if (sale.getStatus() == SaleStatus.RESERVADO || sale.getStatus() == SaleStatus.CONCLUIDO) {
+            restoreStockFromSale(sale);
+        }
+
+        sale.setStatus(SaleStatus.CANCELADO);
+        sale.setCompletedAt(LocalDateTime.now());
+        return saleMapper.toResponse(saleRepository.save(sale));
+    }
+
+    // MÁQUINA DE ESTADOS: Registrar devolução (apenas de venda concluída)
+    @Override
+    @Transactional
+    public SaleResponseDTO returnSale(Long saleId) {
+        Sale sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada."));
+
+        if (sale.getStatus() != SaleStatus.CONCLUIDO) {
+            throw new IllegalArgumentException("Apenas vendas concluídas podem ser devolvidas.");
+        }
+
+        restoreStockFromSale(sale);
+        sale.setStatus(SaleStatus.DEVOLVIDO);
         return saleMapper.toResponse(saleRepository.save(sale));
     }
 
@@ -193,6 +252,17 @@ public class SaleServiceImpl implements SaleService {
 
         if (totalPaid.compareTo(sale.getNetAmount()) < 0) {
             throw new IllegalArgumentException("O valor pago é menor que o total líquido da venda.");
+        }
+    }
+
+    private void restoreStockFromSale(Sale sale) {
+        for (SaleItem item : sale.getItems()) {
+            Product product = item.getProduct();
+            product.setQuantity(product.getQuantity() + item.getQuantity());
+            if (product.getStatus() == ProductStatus.VENDIDO || product.getStatus() == ProductStatus.RESERVADO) {
+                product.setStatus(ProductStatus.DISPONIVEL);
+            }
+            productRepository.save(product);
         }
     }
 

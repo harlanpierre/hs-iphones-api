@@ -13,5 +13,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  api:
+    build: .
+    container_name: hs_iphones_api
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_URL=jdbc:postgresql://postgres:5432/hs_iphones
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:

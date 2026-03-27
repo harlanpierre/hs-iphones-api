@@ -41,7 +41,7 @@ public class Product {
     private ProductCategory category;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private ProductStatus status;
 
     @Column(name = "purchase_price", nullable = false)

@@ -7,11 +7,10 @@ import com.br.hsiphonesapi.model.Client;
 import com.br.hsiphonesapi.repository.ClientRepository;
 import com.br.hsiphonesapi.service.ClientService;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ClientServiceImpl implements ClientService {
@@ -42,10 +41,13 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
-    public List<ClientResponseDTO> findAll() {
-        return repository.findAll().stream()
-                .map(mapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<ClientResponseDTO> findAll(Pageable pageable) {
+        return repository.findAll(pageable).map(mapper::toResponse);
+    }
+
+    @Override
+    public Page<ClientResponseDTO> search(String search, Pageable pageable) {
+        return repository.findBySearch(search, pageable).map(mapper::toResponse);
     }
 
     @Override

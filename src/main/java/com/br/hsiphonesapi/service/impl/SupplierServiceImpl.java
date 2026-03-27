@@ -8,11 +8,10 @@ import com.br.hsiphonesapi.repository.SupplierRepository;
 import com.br.hsiphonesapi.service.SupplierService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -49,10 +48,8 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
-    public List<SupplierResponseDTO> findAll() {
-        return repository.findAll().stream()
-                .map(mapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<SupplierResponseDTO> findAll(Pageable pageable) {
+        return repository.findAll(pageable).map(mapper::toResponse);
     }
 
     @Override
@@ -63,29 +60,21 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
-    public List<SupplierResponseDTO> findByFilter(String filter) {
+    public Page<SupplierResponseDTO> findByFilter(String filter, Pageable pageable) {
         if (filter == null || filter.isBlank()) {
-            return findAll();
+            return findAll(pageable);
         }
 
         String cleanFilter = filter;
 
-        // Verifica se tem números E (pontos OU traços OU parênteses OU barras)
-        // Adicionei o \\/ dentro dos colchetes [ ... ]
         if (filter.matches(".*\\d.*") && filter.matches(".*[\\.\\-\\(\\)\\/].*")) {
-
             cleanFilter = filter.replaceAll("\\D", "");
-
-            // Se a limpeza resultou em vazio (ex: usuário digitou apenas "./-"),
-            // restauramos o original para tentar buscar por nome
             if (cleanFilter.isBlank()) {
                 cleanFilter = filter;
             }
         }
 
-        return repository.findByFilter(cleanFilter).stream()
-                .map(mapper::toResponse)
-                .collect(Collectors.toList());
+        return repository.findByFilter(cleanFilter, pageable).map(mapper::toResponse);
     }
 
     @Override
