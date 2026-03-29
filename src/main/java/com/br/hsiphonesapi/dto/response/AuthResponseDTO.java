@@ -22,4 +22,10 @@ public class AuthResponseDTO {
 
     @Schema(description = "Perfil de acesso", example = "ADMIN")
     private String role;
+
+    @Schema(description = "ID do tenant (empresa/loja)", example = "1")
+    private Long tenantId;
+
+    @Schema(description = "Nome do tenant", example = "HS iPhones PE")
+    private String tenantName;
 }

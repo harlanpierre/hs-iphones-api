@@ -12,9 +12,12 @@ import com.br.hsiphonesapi.model.enums.SaleStatus;
 import com.br.hsiphonesapi.repository.ClientRepository;
 import com.br.hsiphonesapi.repository.ProductRepository;
 import com.br.hsiphonesapi.repository.SaleRepository;
+import com.br.hsiphonesapi.config.tenant.TenantContext;
+import com.br.hsiphonesapi.service.PlanUsageService;
 import com.br.hsiphonesapi.service.SaleService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SaleServiceImpl implements SaleService {
@@ -33,6 +37,7 @@ public class SaleServiceImpl implements SaleService {
     private final ProductRepository productRepository;
     private final ClientRepository clientRepository;
     private final SaleMapper saleMapper;
+    private final PlanUsageService planUsageService;
 
     @Override
     public Page<SaleResponseDTO> findAll(Pageable pageable) {
@@ -41,12 +46,13 @@ public class SaleServiceImpl implements SaleService {
 
     @Override
     public Page<SaleResponseDTO> findByFilters(SaleStatus status, Long clientId, LocalDateTime dateFrom, LocalDateTime dateTo, Pageable pageable) {
-        return saleRepository.findByFilters(status, clientId, dateFrom, dateTo, pageable).map(saleMapper::toResponse);
+        String statusStr = status != null ? status.name() : null;
+        return saleRepository.findByFilters(TenantContext.getTenantId(), statusStr, clientId, dateFrom, dateTo, pageable).map(saleMapper::toResponse);
     }
 
     @Override
     public SaleResponseDTO findById(Long id) {
-        Sale sale = saleRepository.findById(id)
+        Sale sale = saleRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada."));
         return saleMapper.toResponse(sale);
     }
@@ -55,18 +61,22 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional
     public SaleResponseDTO createBudget(SaleRequestDTO dto) {
+        planUsageService.checkCanCreateSale();
         Sale sale = buildBaseSale(dto);
         sale.setStatus(SaleStatus.ORCAMENTO);
 
         processItems(dto.getItems(), sale, false); // false = não deduz estoque agora
 
-        return saleMapper.toResponse(saleRepository.save(sale));
+        Sale saved = saleRepository.save(sale);
+        log.info("Orçamento criado: id={}, cliente={}, total={}", saved.getId(), dto.getClientId(), saved.getTotalAmount());
+        return saleMapper.toResponse(saved);
     }
 
     // FLUXO 2: VENDA DIRETA / PDV (Já desconta estoque, valida pagamento)
     @Override
     @Transactional
     public SaleResponseDTO createDirectCheckout(SaleRequestDTO dto) {
+        planUsageService.checkCanCreateSale();
         Sale sale = buildBaseSale(dto);
         sale.setStatus(SaleStatus.CONCLUIDO);
 
@@ -74,14 +84,16 @@ public class SaleServiceImpl implements SaleService {
         processPayments(dto.getPayments(), sale);
 
         sale.setCompletedAt(LocalDateTime.now());
-        return saleMapper.toResponse(saleRepository.save(sale));
+        Sale saved = saleRepository.save(sale);
+        log.info("Venda direta concluída: id={}, cliente={}, total={}", saved.getId(), dto.getClientId(), saved.getNetAmount());
+        return saleMapper.toResponse(saved);
     }
 
     // MÁQUINA DE ESTADOS: Finalizar um orçamento/reserva existente
     @Override
     @Transactional
     public SaleResponseDTO payAndCompleteSale(Long saleId, List<PaymentRequestDTO> payments) {
-        Sale sale = saleRepository.findById(saleId)
+        Sale sale = saleRepository.findByIdWithDetails(saleId)
                 .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada"));
 
         if (sale.getStatus() == SaleStatus.CONCLUIDO || sale.getStatus() == SaleStatus.CANCELADO) {
@@ -97,6 +109,7 @@ public class SaleServiceImpl implements SaleService {
         sale.setStatus(SaleStatus.CONCLUIDO);
         sale.setCompletedAt(LocalDateTime.now());
 
+        log.info("Venda finalizada via pagamento: id={}, total={}", saleId, sale.getNetAmount());
         return saleMapper.toResponse(saleRepository.save(sale));
     }
 
@@ -104,7 +117,7 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional
     public SaleResponseDTO reserveSale(Long saleId) {
-        Sale sale = saleRepository.findById(saleId)
+        Sale sale = saleRepository.findByIdWithDetails(saleId)
                 .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada"));
 
         if (sale.getStatus() != SaleStatus.ORCAMENTO) {
@@ -113,6 +126,7 @@ public class SaleServiceImpl implements SaleService {
 
         reserveStockForExistingSale(sale);
         sale.setStatus(SaleStatus.RESERVADO);
+        log.info("Venda reservada: id={}", saleId);
         return saleMapper.toResponse(saleRepository.save(sale));
     }
 
@@ -120,7 +134,7 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional
     public SaleResponseDTO cancelSale(Long saleId) {
-        Sale sale = saleRepository.findById(saleId)
+        Sale sale = saleRepository.findByIdWithDetails(saleId)
                 .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada."));
 
         if (sale.getStatus() == SaleStatus.CANCELADO) {
@@ -137,6 +151,7 @@ public class SaleServiceImpl implements SaleService {
 
         sale.setStatus(SaleStatus.CANCELADO);
         sale.setCompletedAt(LocalDateTime.now());
+        log.info("Venda cancelada: id={}", saleId);
         return saleMapper.toResponse(saleRepository.save(sale));
     }
 
@@ -144,7 +159,7 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional
     public SaleResponseDTO returnSale(Long saleId) {
-        Sale sale = saleRepository.findById(saleId)
+        Sale sale = saleRepository.findByIdWithDetails(saleId)
                 .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada."));
 
         if (sale.getStatus() != SaleStatus.CONCLUIDO) {
@@ -153,6 +168,7 @@ public class SaleServiceImpl implements SaleService {
 
         restoreStockFromSale(sale);
         sale.setStatus(SaleStatus.DEVOLVIDO);
+        log.info("Venda devolvida: id={}", saleId);
         return saleMapper.toResponse(saleRepository.save(sale));
     }
 

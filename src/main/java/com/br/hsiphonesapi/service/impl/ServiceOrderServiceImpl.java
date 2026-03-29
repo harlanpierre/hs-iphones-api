@@ -14,9 +14,11 @@ import com.br.hsiphonesapi.repository.ClientRepository;
 import com.br.hsiphonesapi.repository.ProductRepository;
 import com.br.hsiphonesapi.repository.ServiceOrderRepository;
 import com.br.hsiphonesapi.service.ProductStatusHistoryService;
+import com.br.hsiphonesapi.service.PlanUsageService;
 import com.br.hsiphonesapi.service.ServiceOrderService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ServiceOrderServiceImpl implements ServiceOrderService {
@@ -34,6 +37,7 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
     private final ServiceOrderRepository osRepository;
     private final ProductRepository productRepository;
     private final ProductStatusHistoryService historyService;
+    private final PlanUsageService planUsageService;
 
     @Override
     public Page<ServiceOrderResponseDTO> findAll(Pageable pageable) {
@@ -47,7 +51,7 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
 
     @Override
     public ServiceOrderResponseDTO findById(Long id) {
-        ServiceOrder os = osRepository.findById(id)
+        ServiceOrder os = osRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new EntityNotFoundException("Ordem de Serviço não encontrada."));
         return mapper.toResponse(os);
     }
@@ -55,6 +59,8 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
     @Override
     @Transactional
     public ServiceOrderResponseDTO createOS(ServiceOrderRequestDTO dto) {
+        planUsageService.checkCanCreateServiceOrder();
+
         // 1. Busca o cliente na base de dados
         Client client = clientRepository.findById(dto.getClientId())
                 .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
@@ -68,13 +74,15 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
         os.setStatus(ServiceOrderStatus.RECEIVED); // Status inicial padrão
 
         // 3. Salva no banco e já retorna mapeado para o DTO
-        return mapper.toResponse(osRepository.save(os));
+        ServiceOrder saved = osRepository.save(os);
+        log.info("OS criada: id={}, cliente={}, dispositivo='{}'", saved.getId(), dto.getClientId(), dto.getDeviceModel());
+        return mapper.toResponse(saved);
     }
 
     @Override
     @Transactional
     public void addPartToOS(Long osId, Long partId, Integer quantity) {
-        ServiceOrder os = osRepository.findById(osId)
+        ServiceOrder os = osRepository.findByIdWithDetails(osId)
                 .orElseThrow(() -> new EntityNotFoundException("Ordem de Serviço não encontrada."));
 
         // ALTERADO AQUI: Busca garantindo que é uma PEÇA
@@ -113,12 +121,13 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
         os.setTotalAmount(os.getPartsCost().add(os.getLaborCost()).subtract(os.getDiscountAmount()));
 
         osRepository.save(os);
+        log.info("Peça adicionada à OS: osId={}, peçaId={}, qtd={}, subtotal={}", osId, partId, quantity, subtotal);
     }
 
     @Override
     @Transactional
     public void changeOsStatus(Long osId, ServiceOrderStatus newStatus) {
-        ServiceOrder os = osRepository.findById(osId)
+        ServiceOrder os = osRepository.findByIdWithDetails(osId)
                 .orElseThrow(() -> new EntityNotFoundException("Ordem de Serviço não encontrada."));
 
         ServiceOrderStatus oldStatus = os.getStatus();
@@ -144,6 +153,7 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
 
         os.setStatus(newStatus);
         osRepository.save(os);
+        log.info("Status da OS alterado: id={}, {} -> {}", osId, oldStatus, newStatus);
     }
 
     // Método privado auxiliar para devolver peças em caso de cancelamento

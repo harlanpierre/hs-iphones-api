@@ -102,9 +102,9 @@ public class SupplierServiceImpl implements SupplierService {
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Fornecedor não encontrado.");
-        }
-        repository.deleteById(id);
+        Supplier supplier = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Fornecedor não encontrado."));
+        supplier.setDeleted(true);
+        repository.save(supplier);
     }
 }

@@ -6,6 +6,7 @@ import com.br.hsiphonesapi.mapper.ClientMapper;
 import com.br.hsiphonesapi.model.Client;
 import com.br.hsiphonesapi.repository.ClientRepository;
 import com.br.hsiphonesapi.service.ClientService;
+import com.br.hsiphonesapi.service.PlanUsageService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,15 +18,18 @@ public class ClientServiceImpl implements ClientService {
 
     private final ClientRepository repository;
     private final ClientMapper mapper;
+    private final PlanUsageService planUsageService;
 
-    public ClientServiceImpl(ClientRepository repository, ClientMapper mapper) {
+    public ClientServiceImpl(ClientRepository repository, ClientMapper mapper, PlanUsageService planUsageService) {
         this.repository = repository;
         this.mapper = mapper;
+        this.planUsageService = planUsageService;
     }
 
     @Override
     @Transactional
     public ClientResponseDTO save(ClientRequestDTO dto) {
+        planUsageService.checkCanCreateClient();
         if (repository.existsByCpf(dto.getCpf())) {
             throw new IllegalArgumentException("CPF já cadastrado.");
         }
@@ -91,8 +95,11 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!repository.existsById(id)) throw new EntityNotFoundException("Cliente não encontrado.");
-        repository.deleteById(id);
+        Client client = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado."));
+        client.setDeleted(true);
+        repository.save(client);
     }
 }

@@ -9,6 +9,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.TenantId;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,11 +25,20 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "product")
+@SQLRestriction("deleted = false")
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @TenantId
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @Column(nullable = false)
     private String name;
@@ -87,6 +99,10 @@ public class Product {
     @JoinColumn(name = "client_id")
     private Client client;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -95,5 +111,6 @@ public class Product {
         this.createdAt = LocalDateTime.now();
         if (this.quantity == null) this.quantity = 0;
         if (this.status == null) this.status = ProductStatus.DISPONIVEL;
+        if (this.deleted == null) this.deleted = false;
     }
 }

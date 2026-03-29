@@ -30,4 +30,13 @@ public class RegisterRequestDTO {
     @NotNull(message = "O perfil (role) é obrigatório.")
     @Schema(description = "Perfil de acesso do usuário", example = "ADMIN")
     private UserRole role;
+
+    @NotBlank(message = "O e-mail é obrigatório.")
+    @jakarta.validation.constraints.Email(message = "E-mail inválido.")
+    @Schema(description = "E-mail do administrador", example = "admin@minhaloja.com")
+    private String email;
+
+    @NotBlank(message = "O nome da empresa é obrigatório.")
+    @Schema(description = "Nome da empresa/loja (cria um novo tenant)", example = "Minha Loja de iPhones")
+    private String tenantName;
 }

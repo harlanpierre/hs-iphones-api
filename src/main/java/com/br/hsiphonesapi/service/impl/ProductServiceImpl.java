@@ -11,9 +11,11 @@ import com.br.hsiphonesapi.model.enums.ProductStatus;
 import com.br.hsiphonesapi.repository.ClientRepository;
 import com.br.hsiphonesapi.repository.ProductRepository;
 import com.br.hsiphonesapi.repository.SupplierRepository;
+import com.br.hsiphonesapi.service.PlanUsageService;
 import com.br.hsiphonesapi.service.ProductService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -30,10 +33,13 @@ public class ProductServiceImpl implements ProductService {
     private final SupplierRepository supplierRepository;
     private final ClientRepository clientRepository;
     private final ProductMapper mapper;
+    private final PlanUsageService planUsageService;
 
     @Override
     @Transactional
     public ProductResponseDTO save(ProductRequestDTO dto) {
+        planUsageService.checkCanCreateProduct();
+
         // 1. Validação de IMEI Obrigatório para Celular (Lista não pode ser vazia)
         if (dto.getCategory() == ProductCategory.CELULAR) {
             if (dto.getImeis() == null || dto.getImeis().isEmpty()) {
@@ -74,7 +80,9 @@ public class ProductServiceImpl implements ProductService {
             product.setClient(client);
         }
 
-        return mapper.toResponse(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        log.info("Produto cadastrado: id={}, sku='{}', categoria={}", saved.getId(), saved.getSku(), saved.getCategory());
+        return mapper.toResponse(saved);
     }
 
     // Lógica Auxiliar para Gerar SKU
@@ -148,15 +156,18 @@ public class ProductServiceImpl implements ProductService {
             existing.setSupplier(newSupplier);
         }
 
-        return mapper.toResponse(productRepository.save(existing));
+        Product updated = productRepository.save(existing);
+        log.info("Produto atualizado: id={}, sku='{}'", updated.getId(), updated.getSku());
+        return mapper.toResponse(updated);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new EntityNotFoundException("Produto não encontrado.");
-        }
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado."));
+        product.setDeleted(true);
+        productRepository.save(product);
+        log.info("Produto removido (soft delete): id={}", id);
     }
 }

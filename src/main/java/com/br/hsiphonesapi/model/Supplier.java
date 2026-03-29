@@ -7,6 +7,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.TenantId;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,11 +25,16 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "supplier")
+@SQLRestriction("deleted = false")
 public class Supplier {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @TenantId
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
 
     @NotBlank(message = "Nome é obrigatório")
     private String name;
@@ -37,11 +44,16 @@ public class Supplier {
 
     private String phone;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.deleted == null) this.deleted = false;
     }
 }
